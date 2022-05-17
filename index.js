@@ -38,7 +38,23 @@ async function run() {
         const bookingCollection = client.db("DoctorsPortal").collection("booking");
         const userCollection = client.db("DoctorsPortal").collection("user");
 
-    
+        // get all user
+        app.get("/user", verifyToken, async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result)
+        })
+
+        // make admin
+        app.put("/user/admin/:email", async (req, res) => {
+            const email = req.params.email
+            const filter = { email: email };
+            const updateDoc = {
+                $set: {roll : 'admin'}
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result)
+        })
+
         // post user 
         app.put("/user/:email", async (req, res) => {
             const email = req.params.email
