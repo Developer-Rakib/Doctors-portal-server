@@ -27,10 +27,15 @@ async function run (){
             const result = await cursor.toArray();
             res.send(result)
         })
+        app.get("/booking", async(req, res)=>{
+            const query = {};
+            const cursor = bookingCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result)
+        })
 
         app.get("/available", async(req, res)=>{
             const date = req.query.date;
-            console.log(date);
             const services = await servicesCollection.find().toArray()
             const query = {date: date}
             const booking = await bookingCollection.find(query).toArray()
