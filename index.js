@@ -37,6 +37,60 @@ async function run() {
         const servicesCollection = client.db("DoctorsPortal").collection("services");
         const bookingCollection = client.db("DoctorsPortal").collection("booking");
         const userCollection = client.db("DoctorsPortal").collection("user");
+        const doctorCollection = client.db("DoctorsPortal").collection("doctor");
+
+        // verify admin
+        const verifyAdmin = async(req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await userCollection.findOne({ email: requester })
+            if (requesterAccount.roll === 'admin') {
+                next()
+            }
+            else {
+                res.status(403).send({ message: 'forbidden' })
+            }
+        }
+
+        // get admin
+        app.get("/admin/:email", verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const user = await userCollection.findOne(query);
+            // console.log(user);
+            const isAdmin = user?.roll === 'admin'
+            res.send({ admin: isAdmin })
+        })
+
+        // make admin
+        app.put("/user/admin/:email", verifyToken, verifyAdmin, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const updateDoc = {
+                $set: { roll: 'admin' }
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result)
+
+        })
+
+        // get Doctors
+        app.get("/doctor", verifyToken, verifyAdmin, async (req, res) => {
+            const result = await doctorCollection.find().toArray();
+            res.send(result)
+        })
+
+        // post doctor
+        app.post("/doctor", verifyToken, verifyAdmin, async (req, res) => {
+            const doctor = req.body;
+            const result = await doctorCollection.insertOne(doctor)
+            if (result.insertedId) {
+                res.send({ success: true, message: `Dr. ${doctor.name} Successfully Added` })
+            }
+            else {
+                res.send({ success: false, message: 'Somting is Wrong, Please try Again' })
+            }
+        })
+
 
         // get all user
         app.get("/user", verifyToken, async (req, res) => {
@@ -44,16 +98,7 @@ async function run() {
             res.send(result)
         })
 
-        // make admin
-        app.put("/user/admin/:email", async (req, res) => {
-            const email = req.params.email
-            const filter = { email: email };
-            const updateDoc = {
-                $set: {roll : 'admin'}
-            };
-            const result = await userCollection.updateOne(filter, updateDoc);
-            res.send(result)
-        })
+
 
         // post user 
         app.put("/user/:email", async (req, res) => {
@@ -89,7 +134,6 @@ async function run() {
             const booking = req.body;
             const query = { treatment: booking.treatment, date: booking.date, userName: booking.userName };
             const exist = await bookingCollection.findOne(query);
-            console.log(exist);
             if (exist) {
                 return res.send({ success: false, message: booking })
             }
@@ -100,7 +144,7 @@ async function run() {
         //get all service 
         app.get("/services", async (req, res) => {
             const query = {};
-            const cursor = servicesCollection.find(query);
+            const cursor = servicesCollection.find(query).project({ name: 1 });
             const result = await cursor.toArray();
             res.send(result)
         })
