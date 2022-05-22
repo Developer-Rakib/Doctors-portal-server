@@ -3,7 +3,7 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 5000;
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 
@@ -91,6 +91,14 @@ async function run() {
             }
         })
 
+        // delete doctor 
+        app.delete('/doctor/:email', async(req, res)=>{
+            const email = req.params.email;
+            const filter  = {email : email}
+            const result = await doctorCollection.deleteOne(filter)
+            res.send(result)
+        })
+
 
         // get all user
         app.get("/user", verifyToken, async (req, res) => {
@@ -115,7 +123,7 @@ async function run() {
         })
 
 
-        //get user booking 
+        //get  booking 
         app.get("/booking", verifyToken, async (req, res) => {
             const email = req.decoded.email;
             const userEmail = req.query.email;
@@ -139,6 +147,14 @@ async function run() {
             }
             const result = await bookingCollection.insertOne(booking)
             res.send({ success: true, message: result })
+        })
+
+        //get all service 
+        app.get("/booking/:id", verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = {_id:ObjectId(id)};
+            const result = await bookingCollection.findOne(query)
+            res.send(result)
         })
 
         //get all service 
